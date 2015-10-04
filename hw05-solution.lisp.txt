@@ -1,0 +1,532 @@
+#|
+
+CS 2800 Homework 5 - Fall 2014
+
+Student names: This homework is done in pairs. Put BOTH names here.
+
+Technical instructions:
+
+- open this file in ACL2s BEGINNER mode as hw05.lisp
+
+- insert your solutions into this file where indicated (usually as "...")
+
+- only add to the file. Do not remove or comment out anything pre-existing.
+
+- make sure the entire file is accepted by ACL2s. In particular, there must
+  be no "..." left in the code. If you don't finish some problems, comment
+  them out. The same is true for any English text that you may add. This
+  file already contains many comments, so you can see what the syntax is.
+
+- when done, save your file and submit it as hw05.lisp.
+
+- avoid submitting the session file (which shows your interaction with the
+  theorem prover). This is not part of your solution.
+
+Instructions for programming problems:
+
+For each function definition, you must provide both contracts and a body.
+
+You must also ALWAYS supply your own tests. This is in addition to the
+tests sometimes provided. Make sure you produce sufficiently many new test
+cases. This means: cover at least the possible scenarios according to the
+data definitions of the involved types. For example, a function taking two
+lists should have at least 4 tests: all combinations of each list being
+empty and non-empty.
+
+Beyond that, the number of tests should reflect the difficulty of the
+function. For very simple ones, the above coverage of the data definition
+cases may be sufficient. For complex functions with numerical output, you
+want to test whether it produces the correct output on a reasonable
+number if inputs.
+
+Use good judgment. For unreasonably few test cases we will deduct points.
+
+We will use ACL2s' check= facility for tests. This function is similar to
+the equal function, except that if the evaluations of the two arguments
+passed to it are not equal, the function call results in an error message
+(rather than returning nil, as in the case of equal). Thus, if any call to
+check= results in "not equal", your file will be rejected.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Admissible or not?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+This problem set is about the "Definitional Principle".
+
+For each of the definitions below, check whether it is admissible, i.e. it
+satisfies Rules 2-6 of the definitional principle. You can assume that Rule
+1 is met: the symbol used in the defunc is a new function symbol in each case.
+
+If you claim admissibility,
+
+1. Explain in English why the body contracts hold.
+2. Suggest a measure function that can be used to show termination.
+   (You do not have to prove the measure function properties in this problem.)
+3. Explain in English why the contract theorem holds.
+
+Otherwise, identify the *first* rule in the Definitional Principle that is violated.
+("First" is referring to the order the rules where introduced in the lecture.)
+
+(a) If your answer is Rule 2 or 3, explain in English.
+(b) If your answer is Rule 4, 5, or 6, provide an input that satisfies the input
+    contract, but causes a violation in the body (Rule 4), causes
+    non-termination (Rule 5), or the output violates the output contract (Rule 6).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (l)
+  :input-contract (listp l)
+  :output-contract (listp (f l))
+  (if (endp l)
+      nil
+      (g (rest l))))
+
+no: #3 is violated: g is undefined.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x y)
+  :input-contract (and (listp x) (integerp y))
+  :output-contract (natp (f x y))
+  (if (endp x)
+      y
+    (+ 1 (f (rest x) y))))
+
+no: #6 violated: contract theorem fails: (f nil -2) = -2 is not a natp.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (n a)
+  :input-contract (and (natp n) (listp a))
+  :output-contract (natp (f n a))
+  (if (endp a)
+      0
+      (f (rest a))))
+
+no: #3 violated: recursive call to f is not an expression (wrong number of args).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x y)
+  :input-contract (and (listp x) (listp y))
+  :output-contract (natp (f x y))
+  (if (endp x)
+    -1
+    (f (rest x) (cons 1 y))))
+
+no: #6 violated: (f () ()) = -1 violates output contract.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x a)
+  :input-contract (and (listp x) (natp a))
+  :output-contract (natp (f x a))
+  (if (endp x)
+    a
+    (f (rest x) (+ a 1))))
+
+yes: measure is (len x) .
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x y)
+  :input-contract (and (integerp x) (integerp y))
+  :output-contract (integerp (f x y))
+  (if (equal x 0)
+      0
+      (+ (* 2 y) (f (- x 1) y))))
+
+no: #5 violated: does not terminate on x = -3, y = 0.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (a n)
+  :input-contract (and (listp a) (natp n))
+  :output-contract (listp (f a n))
+  (if (equal n 0)
+      (list n)
+      (f (cons (rest a) (first a))
+         (- n 1))))
+
+no: #4 violated: violates input contract of rest for a = nil, n = 3.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (a b)
+  :input-contract  (and (natp a) (natp b))
+  :output-contract (natp (f a b))
+  (cond ((and (equal a 0) (equal b 0)) 0)
+        ((< a b)                       (f b a))
+        (t                             (f a (- b 1)))))
+
+no: #4 violated: body contract violation for (f 4 0) due to the call (f 4 -1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (a b)
+  :input-contract  (and (natp a) (natp b))
+  :output-contract (natp (f a b))
+  (cond ((and (equal a 0) (equal b 0)) 0)
+        ((< a b)                       (f a (- b 1)))
+        (t                             (f b a))))
+
+no: #5 violated: does not terminate on input (1 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x y)
+  :input-contract (listp y)
+  :output-contract (natp (f x y))
+  (cond ((endp y)  0)
+        (t         (f  (len y) (x (rest y))))))
+
+no: #3 violated: x (formal argument of f) is being used as a function
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defunc f (x l)
+  :input-contract (and (integerp  x) (listp l))
+  :output-contract (natp (f x l))
+  (cond ((endp l) 0)
+        ((> x 0)  (f (len l) (rest l)))
+        (t        (- (f x (rest l)) 1))))
+
+no: #6 violated: output contract violation for (f 0 '(1 2))
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Fleshing out the conditions of the Definitional Principle
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+Consider the following function definition:
+
+(defunc accord (i j c)
+  :input-contract (and (natp i) (natp j) (natp c) (< i j))
+  :output-contract (natp (accord i j c))
+  (cond ((and (equal i 0) (equal j 1)) c)
+        ((> i 0) (accord (- i 1) j (+ c 1)))
+        (t       (accord (- j 2) (- j 1) (+ c 1)))))
+
+(a) Show that the constraint (< i j) in the input contract of accord holds
+for each recursive call of accord. (There are two.)
+
+To solve this problem, you have to substitute the actual arguments used in
+the recursive calls of accord for i and j into the expression i < j, and
+then show that the resulting expression is valid. Show the math. As always,
+you can assume that i < j, i.e. the current inputs satisfy the input contract.
+
+First recursive call: i-1 < i < j , which holds since i < j.
+
+Second recursive call: j-2 < j-1 , which holds.
+
+(b) Suppose we change the input contract to
+
+    (and (natp i) (natp j) (natp c))
+
+i.e. we drop the constraint i < j.
+
+Provide an input (i j c) that satisfies the new input contract, but one of
+the recursive calls in the body of accord causes a contract violation.
+Clearly indicate where in the body that contract violation happens.
+
+Hint: this will only work if your input violates (< i j) !
+
+If condition i<j is dropped, then in the call (accord 0 0 0),
+the final t case of the cond will be entered, upon which the input
+contract of accord is violated (twice).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Consider the following function definition:
+
+(defunc f (x y z)
+  :input-contract (and (natp x) (natp y) (listp z))
+  :output-contract (natp (f x y z))
+  (cond ((equal x 0) (+ y (len z)))
+        ((endp z)    (+ x y))
+        ((<= y 1)    (+ x (f (- x 1) 0 (rest z))))
+        ((< x y)     (f x (- y 2) z))
+        (t           (f x y (rest z)))))
+
+(a) Formulate the contract theorem for the above function definition in
+propositional logic. You may use ACL2 expressions such as (equal x 0) as
+propositional atoms in this formula. (You do not need to prove anything in
+this part.)
+
+ic => oc , that is:
+
+(natp x) /\ (natp y) /\ (listp z) => (natp (f x y z))
+
+(b) The body contract rule states: "The body contracts of all functions must
+  hold, provided the input contract of f holds."
+
+More precisely: for every function call (g arg1 ... argk) occurring in the
+body of f, the input contract of g --- applied to the actual arguments arg1
+... argk in the call -- holds, provided that (i) the input contract of f
+holds, AND (ii) the conditions that lead to that call to g hold.
+
+Formalize this condition in propositional logic, but only for the LAST TWO
+clauses of the cond expression: the one guarded by (< x y), and the one
+guarded by t. To help you get started, part of this condition for the FIRST
+cond clause is provided. Fill in the rest, and do the same for the final
+clause. Even if the parts you need to fill in appear trivial, write them
+down. (You do not need to prove anything in this part.)
+
+  (natp x) /\ (natp y) /\ (listp z) /\ ~(equal x 0) /\ ~(endp z) /\ ~(<= y 1) /\ (< x y)
+  =>
+  (natp x) /\ (rationalp y) /\ (natp (- y 2)) /\ (listp z)
+
+  (natp x) /\ (natp y) /\ (listp z) /\ ~(equal x 0) /\ ~(endp z) /\ ~(<= y 1) /\ ~(< x y)
+  =>
+  (natp x) /\ (natp y) /\ (listp (rest z)) /\ (listp z) /\ ~(endp z)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Consider the following function definition:
+
+(defunc f (x)
+  :input-contract (integerp x)
+  :output-contract (and (natp (f x)) (evenp (f x)))
+  (cond ((> x 5)   (+ 1 (f (- x 1))))
+        ((< x -5)  (- 2 (f (+ x 1))))
+        ((evenp x) x)
+        (t         (+ 3 (f (* 3 x))))))
+
+You may assume that f is a fresh function symbol, and that evenp returns
+true whenever its argument is an even integer.
+
+(a) Do the body contracts hold, under the condition that the input contract
+holds? If yes, state so, and give a brief justification. If no, provide an
+integer input x such that the call (f x) eventually leads to a body
+contract violation.
+
+The body contracts hold: the body of f contains only calls to arithmetic
+functions and to f; all these are defined on all integers.
+
+(b) Determine the set TERM of all inputs x such that (f x) terminates. If
+this set is infinite, describe it suitably. If it is finite, enumerate its
+elements. You do not have to prove termination in this problem.
+
+TERM = {-4,-2,0,2,4}
+
+(c) Does the contract theorem hold on the inputs determined in (b)? If yes,
+state so, and give a brief justification. If no, provide an integer input x
+identified in (b) such that the call (f x) produces a value that violates
+the output contract.
+
+The contract theorem does not hold on all terminating inputs. There
+are exactly 2 counterexamples; one is x = -2 : (f -2) = -2, which does not
+satisfy (natp (f x)).
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Investigating a non-terminating function
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+In this problem you will investigate the termination of a function that
+operates on natural numbers _modulo n_ : this means we only consider
+natural numbers i in the range 0 <= i < n (note that n is excluded); there
+are exactly n such numbers. Arithmetic operations such as addition "wrap
+around", as we will see.
+
+We will implicitly introduce the datatype nat-mod-n of such restricted
+natural numbers. This is a _parameterized_ datatype: it depends on the
+parameter n.
+
+|#
+
+; Define a recognizer nat-mod-n-p for the datatype nat-mod-n. Since the
+; type is parameterized by n, so is the recognizer, which hence takes not
+; only some a of type All as input, but also n of type Nat:
+
+; nat-mod-n-p : All x Nat -> Boolean
+
+; (nat-mod-n-p a n) returns T iff a is a natural number less than n.
+
+; Carefully think about the contracts; the signature given above says it all.
+;
+; Define 3 tests.
+
+(defunc nat-mod-n-p (a n)
+  :input-contract (natp n)
+  :output-contract (booleanp (nat-mod-n-p a n))
+  (if (natp a) ; don't use (and ...) here
+    (< a n)
+    nil))
+
+; For example, suppose we define the concrete type of numbers 0,1,2,3:
+
+(defdata mod-4 (oneof 0 1 2 3))
+
+; then the following theorem "thm" holds (and ACL2s should be able to prove
+; it if you defined nat-mod-n-p correctly):
+
+(thm (equal (mod-4p a) (nat-mod-n-p a 4)))
+
+; What does the theorem state?
+
+
+; Now define a function
+
+; plus-mod-n : nat-mod-n x nat-mod-n x Nat -> nat-mod-n
+
+; such that (plus-mod-n a b n) returns the sum of a and b modulo n. That is, it
+; returns the sum a+b, unless that sum equals or exceeds n, in which case
+; the result "wraps around": the result is the remainder of a+b when
+; divided by n. See examples below.
+
+; Hints: (i) There is a very simple way of defining this function; you
+; don't even need any kind of remainder function. (ii) Use let to store the
+; natural number a+b in a local variable.
+
+; Define 3 more tests.
+;
+; Note the way the input contract is written. Make sure you understand why.
+
+(defunc plus-mod-n (a b n)
+  :input-contract (if (natp n) (and (nat-mod-n-p a n) (nat-mod-n-p b n)) nil)
+  :output-contract (nat-mod-n-p (plus-mod-n a b n) n)
+  (let ((sum (+ a b)))
+    (if (< sum n)
+      sum
+      (- sum n))))
+
+(check= (plus-mod-n 2 3 10) 5)
+(check= (plus-mod-n 2 3  5) 0)
+(check= (plus-mod-n 2 3  4) 1)
+
+; Now define an analogous function
+
+; minus-mod-n : nat-mod-n x nat-mod-n x Nat -> nat-mod-n
+
+; such that (minus-mod-n a b n) returns a-b modulo n. See tests below, and define 3 more.
+
+; Think about what happens when a-b is negative: the output MUST be non-negative.
+
+(defunc minus-mod-n (a b n)
+  :input-contract (if (natp n) (and (nat-mod-n-p a n) (nat-mod-n-p b n)) nil)
+  :output-contract (nat-mod-n-p (minus-mod-n a b n) n)
+  (let ((diff (- a b)))
+    (if (>= diff 0)
+      diff
+      (+ diff n))))
+
+(check= (minus-mod-n 5 3 10) 2)
+(check= (minus-mod-n 3 5 10) 8)
+(check= (minus-mod-n 3 5  6) 4)
+
+; We are now switching into program mode, as we are about to define a
+; function that ACL2 has difficulties proving terminating (for good reasons):
+
+:program
+(acl2::acl2s-defaults :set acl2::testing-enabled nil)
+
+; Write a function
+
+; ring-rendezvous : nat-mod-n x nat-mod-n x Nat -> Boolean
+
+; such that ring-rendezvous(a,b,n) implements the following loop:
+
+; while a and b are not equal:
+;   decrement a by 1 modulo n
+;   increment b by 1 modulo n
+; end of loop
+
+; This can be accomplished as follows. Your function should return t if a
+; and b are equal; this simply terminates the loop. Otherwise, the function
+; is called recursively, replacing the arguments a and b according to the
+; decrement/increment expressions shown above. Note that you have to use
+; the plus-mod-n and minus-mod-n functions defined before to properly
+; implement decrement and increment modulo n (do not use the built-in
+; functions - and +). Parameter n always stays the same.
+
+(defunc ring-rendezvous (a b n)
+  :input-contract (if (natp n) (and (nat-mod-n-p a n) (nat-mod-n-p b n)) nil)
+  :output-contract (booleanp (ring-rendezvous a b n))
+  (if (equal a b)
+    t
+    (ring-rendezvous (minus-mod-n a 1 n) (plus-mod-n b 1 n) n)))
+
+; This function is accepted in program mode. (You may want to convince
+; yourself that the function is not accepted without the :program switch.)
+
+; The following switch turns off guard checking, which would create a
+; warning in subsequent test cases that makes the tests unreadable:
+
+(acl2::set-guard-checking :none)
+
+; Now try out a few cases at the ACL2 prompt, including:
+
+; (ring-rendezvous 2 3 7) ; terminates
+; (ring-rendezvous 3 4 7) ; terminates
+; (ring-rendezvous 2 4 8) ; terminates
+; (ring-rendezvous 3 4 6) ; fails
+
+; Do not remove the comment sign in front of these tests in the .lisp file,
+; or your file will not be accepted!
+
+; In the comments _behind_ the tests above, state your findings regarding
+; what happens in these function calls.
+
+; Now turn on function call tracing for ring-rendezvous:
+
+(acl2::trace! ring-rendezvous)
+
+; and run the above test cases again at the ACL2 prompt.
+
+; Looking at these test cases, if you find that ring-rendezvous fails to
+; terminate in any of them, explain why, by illustrating the call sequence
+; in a suitable way.
+
+;   (ring-rendezvous 3 4 6)
+; = (ring-rendezvous 2 5 6)
+; = (ring-rendezvous 1 0 6)
+; = (ring-rendezvous 0 1 6)
+; = (ring-rendezvous 5 2 6)
+; = (ring-rendezvous 4 3 6)
+; = (ring-rendezvous 3 4 6) ; at this point we have created an infinite loop.
+
+; Looking at the successful (terminating) test cases, come up with
+; conjectures for restrictions on the inputs (a b n) such that the function
+; terminates.
+
+; One might conjecture: the function terminates iff a-b is even
+; OR n is odd.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Feedback
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+;; Please fill out the following *anonymous* feedback form, not as a team,
+;; but each team member individually:
+
+;; https://docs.google.com/forms/d/17USXaQp44_e02eAMcmrMToQYkUP9-rKGlapA8EBKFvg/viewform
+
+;; Enter your name here to indicate that you filled out the form:
+
+;; Name of questionnaire participant: ...
+
+Filling out the feedback form is worth 10% of your homework points.
+
+The form is anonymous, to encourage you to write what you think about this
+class. (If you want to stay anonymous, do not reveal your name on the
+feedback form.) On the other hand, we must rely on your honesty in stating
+whether you filled out the form or not, and in not filling out the form
+several times (why would you do that??). We do not want to find
+discrepancies in the number of entries on the form, and the number of
+people claiming to have filled out the form.
+
+|#

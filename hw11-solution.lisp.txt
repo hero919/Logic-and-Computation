@@ -1,0 +1,328 @@
+#|
+
+CS 2800 Homework 11 - Fall 2014
+
+Student names: This homework is done in pairs. Put BOTH names here.
+
+Technical instructions:
+
+- open this file in ACL2s BEGINNER mode as hw11.lisp
+
+- insert your solutions into this file where indicated (usually as "...")
+
+- only add to the file. Do not remove or comment out anything pre-existing.
+
+- make sure the entire file is accepted by ACL2s. In particular, there must
+  be no "..." left in the code. If you don't finish some problems, comment
+  them out. The same is true for any English text that you may add. This
+  file already contains many comments, so you can see what the syntax is.
+
+- when done, save your file and submit it as hw11.lisp.
+
+- avoid submitting the session file (which shows your interaction with the
+  theorem prover). This is not part of your solution.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Tail Recursive Functions and Equivalence Proofs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+1. Consider the following function definitions:
+
+(defunc app (a b)
+  :input-contract (and (listp a) (listp b))
+  :output-contract (listp (app a b))
+  (if (endp a)
+    b
+    (cons (first a) (app (rest a) b))))
+
+(defunc rev (x)
+  :input-contract (listp x)
+  :output-contract (listp (rev x))
+  (if (endp x)
+    ()
+    (app (rev (rest x)) (list (first x)))))
+
+|#
+
+(defunc delete (x l)
+  :input-contract (listp l)
+  :output-contract (listp (delete x l))
+  (cond ((endp l)            ())
+        ((equal x (first l)) (delete x (rest l)))
+        (t                   (cons (first l) (delete x (rest l))))))
+
+(defunc delete-t (x l acc)
+  :input-contract (and (listp l) (listp acc))
+  :output-contract (listp (delete-t x l acc))
+  (cond ((endp l)            acc)
+        ((equal x (first l)) (delete-t x (rest l) acc))
+        (t                   (delete-t x (rest l) (cons (first l) acc)))))
+
+(defunc delete* (x l)
+  :input-contract (listp l)
+  :output-contract (listp (delete* x l))
+  (rev (delete-t x l ())))
+
+#|
+
+and the following conjecture:
+
+phi: (listp l) => (delete* x l) = (delete x l)
+
+We prove this conjecture in three steps.
+
+(a) Establish a lemma that relates delete-t and delete. Your lemma should
+have the following form:
+
+psi: (listp l) /\ (listp acc) => (delete-t x l acc) = ... (delete x l) ...
+
+Our lemma is:
+
+psi: (listp l) /\ (listp acc) => (delete-t x l acc) = (app (rev (delete x l)) acc)
+
+(b) Assuming psi is valid, prove phi using only equational reasoning.
+
+C1. (listp l)
+
+  (delete* x l)
+= { def. delete* }
+  (rev (delete-t x l ()))
+= { psi|((acc ())), C1 }
+  (rev (app (rev (delete x l)) ()))
+= { theorem: (listp y) => (app y nil) = y, subst ((y (rev (delete x l)))) }
+  (rev (rev (delete x l)))
+= { theorem: (listp y) => (rev (rev y)) = y, subst ((y (delete x l))) }
+  (delete x l)
+
+(c) Now prove psi using the IS suggested by delete-t. Note that this IS
+gives rise to four proof obligations.
+
+- (not ic) => psi: trivial
+
+- (listp l) /\ (listp acc) /\ (endp l) => psi: easy, no lemma needed
+
+- (listp l) /\ (listp acc) /\ (not (endp l)) /\ (equal x (first l)) /\ psi|((l (rest l))) => psi:
+
+C1. (listp l)
+C2. (listp acc)
+C3. (not (endp l))
+C4. (equal x (first l))
+C5. (listp (rest l)) /\ (listp acc) => (delete-t x (rest l) acc) = (app (rev (delete x (rest l))) acc)
+
+C6. (listp (rest l)) { C1, C3 }
+C7. (delete-t x (rest l) acc) = (app (rev (delete x (rest l))) acc) { C5, C6, C2, MP }
+
+  (delete-t x l acc)
+
+= { def. delete-t, C3, C4 }
+
+  (delete-t x (rest l) acc))
+
+= { C7 }
+
+  (app (rev (delete x (rest l))) acc)
+
+= { def. delete, C3, C4 }
+
+  (app (rev (delete x l))
+
+- (listp l) /\ (listp acc) /\ (not (endp l)) /\ (not (equal x (first l))) /\ psi|((l (rest l)) (acc (cons (first l) acc))) => psi :
+
+C1. (listp l)
+C2. (listp acc)
+C3. (not (endp l))
+C4. x != (first l)
+C5. (listp (rest l)) /\ (listp (cons (first l) acc)) => (delete-t x (rest l) (cons (first l) acc)) = (app (rev (delete x (rest l))) (cons (first l) acc))
+
+C6. (listp (rest l)) { C1, C3 }
+C7. (listp (cons (first l) acc)) { axioms cons }
+C8. (delete-t x (rest l) (cons (first l) acc)) = (app (rev (delete x (rest l))) (cons (first l) acc))
+
+  (delete-t x l acc)
+
+= { def. delete-t, C3, C4 }
+
+  (delete-t x (rest l) (cons (first l) acc))
+
+= { C8 }
+
+. (app (rev (delete x (rest l))) (cons (first l) acc))
+
+= { def. app, axioms list, cons, first, rest }
+
+  (app (rev (delete x (rest l))) (app (list (first l)) acc))
+
+= { associativity app }
+
+  (app (app (rev (delete x (rest l))) (list (first l))) acc)
+
+= { lemma: (app (rev x) (list y)) = (rev (cons y x)), subst ((x (delete x (rest l))) (y (first l))) }
+
+  (app (rev (cons (first l) (delete x (rest l)))) acc)
+
+= { def. delete, C3, C4 }
+
+  (app (rev (delete x l)) acc)
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+2. 
+
+Consider the following function definition:
+
+|#
+
+(defunc exe (a n)
+  :input-contract (and (rationalp a) (natp n))
+  :output-contract (rationalp (exe a n))
+  (if (equal n 0)
+    1
+    (* a (exe a (- n 1)))))
+
+#|
+
+(a) Prove the following conjecture phi by induction. Use the induction
+scheme suggested by the function nind given in the lecture notes.
+
+phi: (rationalp a) /\ (natp n) /\ (natp m) => (exe a n) * (exe a m) = (exe a n+m)
+
+- ~(natp n) => phi: trivial
+
+-  (natp n) /\ n=0 => phi: this follows immediately from the def. of exe and arithmetic
+
+-  (natp n) /\ n>0 /\ phi|((n n-1)) => phi:
+
+C1. (natp n)
+C2. n>0
+C3. (rationalp a) /\ (natp n-1) /\ (natp m) => (exe a n-1) * (exe a m) = (exe a (n-1)+m)
+C4. (rationalp a)
+C5. (natp m)
+C6. (natp n-1) { C1, C2 }
+C7. (exe a n-1) * (exe a m) = (exe a (n-1)+m) { C3, C4, C6, C5, MP }
+
+  (exe a n) * (exe a m)
+
+= { def. exe, C2 }
+
+  (a * (exe a n-1)) * (exe a m)
+
+= { associativity * }
+
+  a * ((exe a n-1) * (exe a m))
+
+= { C7 }
+
+  a * (exe a (n-1)+m)
+
+= { arithmetic }
+
+  a * (exe a (n+m)-1)
+
+= { def. exe; arithmetic: n+m>0 by C2 }
+
+  (exe a n+m)
+
+(b) Define a tail-recursive version exe-t of exe. Your function should have
+the signature shown below. Argument acc is an accumulator that collects
+intermediate results and, in the end, contains the final value.
+
+|#
+
+(defunc exe-t (a n acc)
+  :input-contract (and (rationalp a) (natp n) (rationalp acc))
+  :output-contract (rationalp (exe-t a n acc))
+  (if (equal n 0)
+    acc
+    (exe-t a (- n 1) (* a acc))))
+
+#|
+
+(c) Define a function exe* with the same signature as exe such that
+(exe* a n) calls exe-t and is intended to compute the same value as (exe a n).
+
+|#
+
+(defunc exe* (a n)
+  :input-contract (and (rationalp a) (natp n))
+  :output-contract (rationalp (exe* a n))
+  (exe-t a n 1))
+
+#|
+
+(d) Formulate a lemma psi that relates the value computed by
+(exe-t a n acc) and the value computed by (exe a n). Your lemma should have
+the following form:
+
+psi : ... => (exe-t a n acc) = ... (exe a n) ...
+
+Replace the ... by suitable hypotheses and ACL2 expressions. Function exe*
+should not appear in the lemma.
+
+psi: (rationalp a) /\ (natp n) /\ (rationalp acc) => (exe-t a n acc) = (exe a n) * acc
+
+(e) Assuming lemma psi above has been proved, prove the following claim
+purely using equational reasoning. If you use psi, make sure to provide a
+substitution.
+
+(rationalp a) /\ (natp n) => (exe* a n) = (exe a n)
+
+C1. (rationalp a)
+C2. (natp n)
+
+  (exe* a n)
+
+= { def. exe* }
+
+  (exe-t a n 1)
+
+= { psi|((acc 1)), C1, C2, (rationalp 1), MP }
+
+  (exe a n) * 1
+
+= { arithmetic }
+
+  (exe a n)
+
+(f) Finally, prove psi by induction. Use the induction scheme suggested by
+function exe-t.
+
+~((rationalp a) /\ (natp n) /\ (rationalp acc)) => psi: trivial
+  (rationalp a) /\ (natp n) /\ (rationalp acc) /\ n=0 => psi: easy
+  (rationalp a) /\ (natp n) /\ (rationalp acc) /\ n>0 /\ psi|((n n-1) (acc a*acc)) => psi:
+
+C1. (rationalp a)
+C2. (natp n)
+C3. (rationalp acc)
+C4. n>0
+C5. (rationalp a) /\ (natp n-1) /\ (rationalp a*acc) => (exe-t a n-1 a*acc) = (exe a n-1) * (a*acc)
+C6. (natp n-1) { C2,C4 }
+C7. (rationalp a*acc) { C1,C3,arithmetic }
+C8. (exe-t a n-1 a*acc) = (exe a n-1) * (a*acc) { C5,C1,C6,C7,MP }
+
+  (exe-t a n acc)
+
+= { def. exe-t,C4 }
+
+  (exe-t a n-1 a*acc)
+
+= { C8 }
+
+  (exe a n-1) * (a*acc)
+
+= { arithmetic }
+
+  (a * (exe a n-1)) * acc
+
+= { def. exe, C4 }
+
+  (exe a n) * acc
+
+|#

@@ -1,0 +1,607 @@
+#|
+
+CS 2800 Homework 3 - Fall 2014
+
+Student names: This homework is done in pairs. Put BOTH names here.
+
+For this homework you will need to use ACL2s.
+
+Technical instructions:
+
+- open this file in ACL2s as hw03.lisp
+
+- make sure you are in Bare Bones mode. This is essential! Note that
+  you can only change the mode when the session is not running,
+  so that the correct mode before starting the session.
+
+- insert your solutions into this file where indicated (usually as "...")
+
+- only add to the file. Do not remove or comment out anything pre-existing.
+
+- make sure the entire file is accepted by ACL2s. In particular, there must
+  be no "..." left in the code. If you don't finish some problems, comment
+  them out. The same is true for any English text that you may add. This
+  file already contains many comments, so you can see what the syntax is.
+
+Instructions for programming problems:
+
+For each function definition, you must provide both contracts and a body.
+
+You must also ALWAYS supply your own tests. This is in addition to the
+tests sometimes provided. Make sure you produce sufficiently many new test
+cases. This means: cover at least the possible scenarios according to the
+data definitions of the involved types. For example, a function taking two
+lists should have at least 4 tests: all combinations of each list being
+empty and non-empty.
+
+Beyond that, the number of tests should reflect the difficulty of the
+function. For very simple ones, the above coverage of the data definition
+cases may be sufficient. For complex functions with numerical output, you
+want to test whether it produces the correct output on a reasonable
+number if inputs.
+
+Use good judgment. For unreasonably few test cases we will deduct points.
+
+We will use ACL2s' check= facility for tests. This function is similar to
+the equal function, except that if the evaluations of the two arguments
+passed to it are not equal, the function call results in an error message
+(rather than returning nil, as in the case of equal). Thus, if any call to
+check= results in "not equal", your file will be rejected.
+
+- when done, save your file and submit it as hw03.lisp.
+
+- avoid submitting the session file (which shows your interaction with the
+  theorem prover). This is not part of your solution.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; A. Basic Boolean Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Recall the following elementary Boolean functions:
+
+(defunc booleanp (x)
+  :input-contract t
+  :output-contract (booleanp (booleanp x))
+  (if (equal x t)
+      t
+    (equal x nil)))
+
+; Note how we use the very function we are defining -- booleanp -- in the
+; output contract of the definition
+
+; Recall the definitions of 'and' and 'or' :
+(defunc and (a b)
+  :input-contract (if (booleanp a) (booleanp b) nil)
+  :output-contract (booleanp (and a b))
+  (if a b nil))
+
+; Note how we DO NOT use the very function we are defining -- and -- in the
+; input contract of the definition. What would happen if we changed the
+; input contract to (and (booleanp a) (booleanp b)) ? Try it but do not
+; submit the result -- it should fail.
+
+(defunc or (a b)
+  :input-contract (and (booleanp a) (booleanp b))
+  :output-contract (booleanp (or a b))
+  (if a t b))
+
+; What happens if you evaluate (or 1 nil)? Try it. Here is what you should see:
+
+#|
+
+ACL2 Error in ACL2::TOP-LEVEL:  The guard for the function call (OR A B),
+which is (AND (BOOLEANP A) (BOOLEANP B)), is violated by the arguments
+in the call (OR 1 NIL).
+See :DOC set-guard-checking for information about suppressing this
+check with (set-guard-checking :none), as recommended for new users.
+To debug see :DOC print-gv, see :DOC trace, and see :DOC wet.
+
+|#
+
+; When ACL2s reports a "guard" violation, as it did when you tried
+; evaluating (or 1 nil), we violated the contract of a function.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; oor: Boolean x Boolean x Boolean -> Boolean
+
+; (oor a b c) implements the Boolean "a or b or c".
+
+; Use the or function.
+
+(defunc oor (a b c)
+  :input-contract (and (and (booleanp a) (booleanp b)) (booleanp c))
+  :output-contract (booleanp (oor a b c))
+  (or (or a b) c))
+
+(check= (oor t   nil t  ) t)
+(check= (oor nil nil nil) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Provide an example of an expression containing an if that has three
+; arguments as required for if but whose evaluation leads to a contract
+; violation.
+
+; The solution must be given inside a comment, to prevent ACL2 from
+; complaining about your expression.
+
+; (if 1 2 3)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; not: Boolean -> Boolean
+
+; (not a) implements the Boolean "not a".
+
+(defunc not (a)
+  :input-contract (booleanp a) 
+  :output-contract (booleanp (not a))
+  (if a nil t))
+
+(check= (not t) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; follows-from: Boolean x Boolean -> Boolean
+
+; (follows-from a b) implements the Boolean "b implies a".
+
+; Use the implies function.
+
+(defunc follows-from (a b)
+  :input-contract (and (booleanp a) (booleanp b))
+  :output-contract (booleanp (follows-from a b))
+  (not (and (not a) b)))
+
+(check= (follows-from t   t)   t)
+(check= (follows-from nil nil) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; iff: Boolean x Boolean -> Boolean
+
+; (iff a b) implements the Boolean "a equivalent to b".
+
+(defunc iff (a b)
+  :input-contract (and (booleanp a) (booleanp b))
+  :output-contract (booleanp (iff a b))
+  (equal a b))
+
+(check= (iff t   t)   t)
+(check= (iff nil nil) t)
+
+; Provide an example of an expression containing 'equal' whose evaluation
+; does not lead to a contract violation, but when we replace the equal with
+; 'iff', evaluation does lead to a contract violation.
+
+; (equal 1 1)
+
+; Can you provide an example of an expression containing 'iff' whose
+; evaluation does not lead to a contract violation, but when we replace the
+; iff with 'equal', evaluation leads to a contract violation? If so,
+; provide an example. If not, explain.
+
+
+; Not possible. the guards of iff are more restrictive than those of equal,
+; so anytime one can call iff, one can also call equal.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; nor: Boolean x Boolean -> Boolean
+
+; (nor a b) implements the negation of the Boolean "or".
+
+(defunc nor (a b)
+  :input-contract (and (booleanp a) (booleanp b))
+  :output-contract (booleanp (nor a b))
+  (not (or a b)))
+
+(check= (nor t   t)   nil)
+(check= (nor nil nil) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; minor : Boolean x Boolean x Boolean -> Boolean
+
+; (minor a b c) is t if the minority of a,b,c is t, i.e. at most one of the
+; three. Otherwise minor is nil. See test cases (and remember to provide your own).
+
+(defunc minor (a b c)
+  :input-contract (and (and (booleanp a) (booleanp b)) (booleanp c))
+  :output-contract (booleanp (minor a b c))
+  (oor (and (not a) (not b))
+       (and (not a) (not c))
+       (and (not b) (not c))))
+
+(check= (minor t   nil t)   nil)
+(check= (minor nil t   nil) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; exactly-one: Boolean x Boolean -> Boolean
+
+; (exactly-one a b) is t if exactly one of a and b is t, and nil otherwise.
+
+; Hint: first build a truth table for this function, and then simply and express
+; the result using Boolean connectives you have already defined (so that ACL2
+; can accept your function).
+
+(defunc exactly-one (a b)
+  :input-contract (and (booleanp a) (booleanp b))
+  :output-contract (booleanp (exactly-one a b))
+  (if a (not b) b))
+
+(check= (exactly-one t   t) nil)
+(check= (exactly-one t nil) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; B. Basic Numerical Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; <= : Rational x Rational -> Boolean
+
+; (<= a b) is t if a <= b, otherwise it is nil.
+
+(defunc <= (a b)
+  :input-contract (and (rationalp a) (rationalp b))
+  :output-contract (booleanp (<= a b))
+  (or (< a b)
+      (equal a b)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; <=<= : Rational x Rational x Rational -> Boolean
+
+; (<= a b c) is t if a <= b <= c, otherwise it is nil.
+
+(defunc <=<= (a b c)
+  :input-contract (and (and (rationalp a) (rationalp b)) (rationalp c))
+  :output-contract (booleanp (<=<= a b c))
+  (and (<= a b)
+       (<= b c)))
+
+(check= (<=<= 1/4 1/3 1/2) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; abs: Rational -> Rational
+
+; (abs a) returns the absolute value of the rational number a. (Consult a
+; math book or Wikipedia if you don't know what the absolute value of a
+; number is.)
+
+(defunc abs (a)
+  :input-contract (rationalp a)
+  :output-contract (rationalp (abs a))
+  (if (<= a 0)
+    (unary-- a)
+    a))
+
+(check= (abs 3) 3)
+(check= (abs 0) 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; natp: All -> Boolean
+
+; (natp a) is t if a is a natural number, otherwise it is nil.
+
+(defunc natp (a)
+  :input-contract t
+  :output-contract (booleanp (natp a))
+  (if (integerp a)
+    (not (< a 0))
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; - : Rational x Rational -> Rational
+
+; (- a b) returns a - b
+
+(defunc - (a b)
+  :input-contract (and (rationalp a) (rationalp b))
+  :output-contract (rationalp (- a b))
+  (+ a (unary-- b)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; /: Rational x Rational-{0} -> Rational
+
+; (/ a b) returns a/b; note that b has to be non-0.
+; Think about the input contract.
+
+(defunc / (a b)
+  :input-contract (and (and (rationalp a) (rationalp b)) (not (equal b 0)))
+  :output-contract (rationalp (/ a b))
+  (* a (unary-/ b)))
+
+(check= (/ 23 46) 1/2)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; divides: Nat x Nat-{0} -> Boolean
+
+; (divides x y) is t iff x is divisible by y.
+
+(defunc divides (x y)
+  :input-contract (and (and (natp x) (natp y)) (not (equal y 0)))
+  :output-contract (booleanp (divides x y))
+  (integerp (/ x y)))
+
+(check= (divides 2 4) nil)
+(check= (divides 4 2) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; The following functions need recursion.
+
+; The following directive turns off some static checks that ACL2 performs.
+; We turn them off since some of these checks are non-trivial and may
+; require advanced features of ACL2 that we have not studied.
+
+:program
+
+; Define
+; rem: Nat x Nat-{0} -> Nat
+
+; (rem x y) returns the remainder of the integral division of x by y.
+
+(defunc rem (x y)
+  :input-contract (and (and (natp x) (natp y)) (not (equal y 0)))
+  :output-contract (natp (rem x y))
+  (if (divides x y)
+    0
+    (+ 1 (rem (- x 1) y))))
+
+(check= (rem 2 4) 2)
+(check= (rem 4 2) 0)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; nat/: Nat x Nat-{0} -> Nat
+
+; (nat/ x y) returns the result of integer division of x by y.
+; That is, it returns the integral part (floor) of x/y,
+; which is a natural number. See the examples below.
+
+; Hint: this is a *non-recursive* function. Use rem from above.
+
+(defunc nat/ (x y)
+  :input-contract (and (and (natp x) (natp y)) (not (equal y 0)))
+  :output-contract (natp (nat/ x y))
+  (/ (- x (rem x y)) y))
+
+(check= (nat/ 10 2) 5)
+(check= (nat/ 11 2) 5)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; add-digits: Nat -> Nat
+
+; (add-digits x) returns the sum of the decimal digits in x,
+; which is a natural number.
+
+; Hint: Write a recursive definition that sums up the digits in x from the
+; least significant to the most significant. The function rem will be
+; helpful.
+
+(defunc add-digits (x)
+  :input-contract (natp x)
+  :output-contract (natp (add-digits x))
+  (if (< x 10)
+    x
+    (let* ((rem (rem x 10))
+           (y   (/ (- x rem) 10)))
+      (+ rem (add-digits y)))))
+
+(check= (add-digits 000) 0)
+(check= (add-digits 123) 6)
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; C. Basic List Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+; Recall the meaning of these important built-in functions: cons consp listp first rest
+
+; Function endp is how we test to see if a list is empty (often done in recursive function definitions):
+
+(defunc endp (l)
+  :input-contract (listp l)
+  :output-contract (booleanp (endp l))
+  (equal l ()))
+
+(check= (endp (cons 1 ())) nil)
+
+; (endp 3) is an error!
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; len: List -> Nat
+
+; (len l) returns the number of (top-level) elements in l.
+
+(defunc len (l)
+  :input-contract (listp l)
+  :output-contract (natp (len l))
+  (if (endp l)
+    0
+    (+ 1 (len (rest l)))))
+
+; In the test cases below and the following, we use the 'quote' mechanism
+; to write lists even more succintly then using (list ...).
+; We can think of the notation
+; '(1 2 3)
+; as an abbreviation for
+; (list 1 2 3)
+; It therefore evaluates to the list containing 1, 2, and 3.
+
+(check= (len ())       0)
+(check= (len '(1))     1)
+(check= (len '((1 2))) 1) ; make sure you understand this output!
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; has-threep: List -> Boolean
+
+; (has-threep a) returns true if the list a has length at least 3, nil otherwise.
+
+(defunc has-three (a)
+  :input-contract (listp a)
+  :output-contract (booleanp (has-three a))
+  (not (< (len a) 3)))
+
+(check= (has-three ())       nil)
+(check= (has-three '(1 1 1)) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; n-th: Nat x List -> All
+
+; (n-th n l) returns the nth element of list l, COUNTING FROM 0.
+; If l does not have an nth element, nil is returned.
+
+(defunc n-th (n l)
+  :input-contract (and (natp n) (listp l))
+  :output-contract t
+  (cond ((endp l)    nil)
+        ((equal n 0) (first l))
+        (t           (n-th (+ n -1) (rest l)))))
+
+(check= (n-th 0  '(1 2)) 1)
+(check= (n-th 10 '(1 2)) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; elem: All x List -> Boolean
+
+; (elem a X) returns t iff a is an element of list X.
+
+(defunc elem (a X)
+  :input-contract (listp X)
+  :output-contract (booleanp (elem a X))
+  (cond ((endp X) nil)
+        ((equal a (first X)) t)
+        (t        (elem a (rest X)))))
+
+(check= (elem 2 '(1 2 3 4)) t)
+(check= (elem 2 '(1 3 3 4)) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; has-dups: List -> Boolean
+
+; (has-dups l) returns t if l contains any element twice (or more); nil otherwise.
+
+(defunc has-dups (l)
+  :input-contract (listp l)
+  :output-contract (booleanp (has-dups l))
+  (if (endp l)
+    nil
+    (or (elem (first l) (rest l))
+        (has-dups (rest l)))))
+
+(check= (has-dups '(1))   nil)
+(check= (has-dups '(1 1)) t)
+
+; Define two recognizer functions
+; rationallistp : All -> Bool
+; natlistp      : All -> Bool
+; which recognize a list of rationals and a list of naturals, respectively.
+; These will be recursive functions; use rationalp and natp, respectively.
+; Note that the empty list () is both a rationallist and a natlist.
+
+(defunc rationallistp (l)
+  :input-contract t
+  :output-contract (booleanp (rationallistp l))
+  (if (listp l)
+    (if (endp l)
+      t
+      (and (rationalp (first l))
+           (rationallistp (rest l))))
+    nil))
+
+(check= (rationallistp ()) t)
+(check= (rationallistp '(1 t)) nil)
+
+(defunc natlistp (l)
+  :input-contract t
+  :output-contract (booleanp (natlistp l))
+  (if (listp l)
+    (if (endp l)
+      t
+      (and (natp (first l))
+           (natlistp (rest l))))
+    nil))
+
+(check= (natlistp ()) t)
+(check= (natlistp '(1 1/2)) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; sorted : Rationallist -> Boolean
+
+; (sorted l) returns t if l is a sorted (smallest to largest) list of
+; rationals, nil otherwise.
+
+(defunc sorted (l)
+  :input-contract (rationallistp l)
+  :output-contract (booleanp (sorted l))
+  (if (<= (len l) 1)
+    t
+    (and (<= (first  l)
+             (first (rest l)))
+         (sorted (rest l)))))
+
+(check= (sorted '(-1 -1/2 2 5)) t)
+(check= (sorted '(-1 -1/2 2 1)) nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Define
+; scale-natlist : Nat x Natlist -> Natlist
+
+; (scale-natlist s l ) takes a list of natural numbers as input and
+; scales it by the factor of s, i.e. each element is multiplied by s.
+
+(defunc scale-natlist (s l)
+  :input-contract (and (natp s) (natlistp l))
+  :output-contract (natlistp (scale-natlist s l))
+  (if (endp l)
+     nil
+     (cons (* s (first l)) (scale-natlist s (rest l)))))
+
+(check= (scale-natlist 3 '( 1 2 3)) '( 3 6 9))
+(check= (scale-natlist 3 nil) nil)

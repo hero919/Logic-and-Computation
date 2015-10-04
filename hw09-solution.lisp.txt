@@ -1,0 +1,584 @@
+#|
+
+CS 2800 Homework 9 - Fall 2014
+
+Student names: This homework is done in pairs. Put BOTH names here.
+
+Technical instructions:
+
+- open this file in ACL2s BEGINNER mode as hw09.lisp
+
+- insert your solutions into this file where indicated (usually as "...")
+
+- only add to the file. Do not remove or comment out anything pre-existing.
+
+- make sure the entire file is accepted by ACL2s. In particular, there must
+  be no "..." left in the code. If you don't finish some problems, comment
+  them out. The same is true for any English text that you may add. This
+  file already contains many comments, so you can see what the syntax is.
+
+- when done, save your file and submit it as hw09.lisp.
+
+- avoid submitting the session file (which shows your interaction with the
+  theorem prover). This is not part of your solution.
+
+Instructions for programming problems:
+
+For each function definition, you must provide both contracts and a body.
+
+You must also ALWAYS supply your own tests. This is in addition to the
+tests sometimes provided. Make sure you produce sufficiently many new test
+cases. This means: cover at least the possible scenarios according to the
+data definitions of the involved types. For example, a function taking two
+lists should have at least 4 tests: all combinations of each list being
+empty and non-empty.
+
+Beyond that, the number of tests should reflect the difficulty of the
+function. For very simple ones, the above coverage of the data definition
+cases may be sufficient. For complex functions with numerical output, you
+want to test whether it produces the correct output on a reasonable
+number if inputs.
+
+Use good judgment. For unreasonably few test cases we will deduct points.
+
+We will use ACL2s' check= facility for tests. This function is similar to
+the equal function, except that if the evaluations of the two arguments
+passed to it are not equal, the function call results in an error message
+(rather than returning nil, as in the case of equal). Thus, if any call to
+check= results in "not equal", your file will be rejected.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Induction Proofs
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+1.
+
+We want to find a closed formula (one whose evaluation does not require
+recursion) for the sum of the first n odd numbers. For example, the sum of
+the first _zero_ odd numbers is 0. The sum of the first _two_ odd numbers
+is 1 + 3 = 4.
+
+(a) Define a recursive ACL2s function sum-odd that computes the sum of the
+first n odd numbers. Test your function by computing the sum of the first n
+odd numbers for n = 1, 2, 3, 4.
+
+(defunc sum-odd (n)
+  :input-contract (natp n)
+  :output-contract (natp (sum-odd n))
+  (if (equal n 0)
+    0
+    (+ (- (* 2 n) 1) (sum-odd (- n 1))))
+)
+
+(b) Generalize your test results from (a) and formulate a closed-form
+conjecture about the sum of the first n odd numbers. Write your conjecture
+as a logical formula, and make sure you include any necessary type
+hypotheses in your conjecture. That is, your conjecture should take the
+following form:
+
+phi: (natp n) => (sum-odd n) = n^2
+
+(c) Prove your conjecture by induction. To this end, first extract the
+induction scheme suggested by sum-odd. Then prove the parts of the
+induction scheme using equational reasoning.
+
+- (not (natp n)) => phi : this is easy to prove and omitted here.
+
+- (natp n) /\ (equal n 0) => ((natp n) => (sum-odd n) = n^2)
+
+- (natp n) /\ n != 0 /\ (((natp n) => (sum-odd n) = n^2)|((n (n-1))))  => ((natp n) => (sum-odd n) = n^2)
+
+C1. (natp n)
+C2. n != 0
+C3. (natp (- n 1)) => (sum-odd (- n 1)) = (n-1)^2
+
+C4. (natp (- n 1)) { C1,C2, def. natp }
+C5. (sum-odd (- n 1)) = (n-1)^2 { C3,C4,MP }
+
+  (sum-odd n)
+
+= { def. sum-odd, C2 }
+
+  2n-1 + (sum-odd (- n 1))
+
+= { C5 }
+
+  2n-1 + (n-1)^2
+
+= { arithmetic }
+
+  n^2
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+2.
+
+Consider:
+
+(defunc remove-dups (a)
+  :input-contract (listp a)
+  :output-contract (listp (remove-dups a))
+  (if (endp a)
+    nil
+    (if (in (first a) (rest a))
+      (remove-dups (rest a))
+      (cons (first a) (remove-dups (rest a))))))
+
+Prove the following conjecture by induction, using the induction scheme
+suggested by the remove-dups function itself.
+
+Hint: first rewrite this function equivalently using a single cond.
+
+phi: (listp l) => (<= (len (remove-dups l)) (len l))
+
+We use the induction scheme suggested by remove-dups:
+
+- (not (listp l)) => phi (trivial)
+
+- (listp l) /\ (endp l) => phi (easy)
+
+- (listp l) /\ (not (endp l)) /\ (in (first l) (rest l)) /\ ((listp (rest l)) => (len (remove-dups (rest l))) <= (len (rest l)))
+  => ((listp l) => (<= (len (remove-dups l)) (len l)))
+
+Simple ER. Use the fact that (len (rest l)) <= (len l)
+
+- (listp l) /\ (not (endp l)) /\ (not (in (first l) (rest l))) /\ ((listp (rest l)) => (len (remove-dups (rest l))) <= (len (rest l)))
+  => ((listp l) => (<= (len (remove-dups l)) (len l)))
+
+Simple ER. Properly expand or de-expand the definitions of remove-dups and len.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Induction Schemes
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+This set of problems is about Induction Schemes. Remember that *every*
+admissible ACL2 function gives rise to an induction scheme. Given an
+arbitrary formula phi (which is irrelevant for these problems), determine
+the induction scheme for each of the following functions. That is,
+instantiate the general induction scheme template from the lecture notes to
+a concrete induction scheme for each function. Do not omit "trivial" cases.
+Your answer should look like this:
+
+"In order to prove phi, it is sufficient, by the induction principle, to prove:
+
+(i)   ... => phi
+(ii)  ... => phi
+(iii) ... => phi
+..."
+
+Note that, depending on the function given to you, there may be more than
+three clauses in the induction scheme.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+3.
+
+(defunc natlistp (l)
+  :input-contract (listp l)
+  :output-contract (booleanp (natlistp l))
+  (cond ((endp l)               t)
+        ((not (natp (first l))) nil)
+        (t                      (natlistp (rest l)))))
+
+~(listp l) => phi
+ (listp l) /\ (endp l) => phi
+ (listp l) /\ ~(endp l) /\ ~(natp (first l)) => phi
+ (listp l) /\ ~(endp l) /\ (natp (first l)) /\ phi|((l (rest l))) => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+4.
+
+(defunc nth (n l)
+  :input-contract (and (natp n) (listp l))
+  :output-contract t
+  (if (endp l)
+    nil
+    (if (equal n 0)
+      (first l)
+      (nth (- n 1) (rest l)))))
+
+Hint: first rewrite this function equivalently using a single cond.
+
+(defunc nth (n l)
+  :input-contract (and (natp n) (listp l))
+  :output-contract t
+  (cond ((endp l) nil)
+        ((equal n 0) (first l))
+        (t           (nth (- n 1) (rest l)))))
+
+~((natp n) /\ (listp l)) => phi
+  (natp n) /\ (listp l) /\  (endp l) => phi
+  (natp n) /\ (listp l) /\ ~(endp l) /\ n=0 => phi
+  (natp n) /\ (listp l) /\ ~(endp l) /\ n>0 /\ phi|((n n-1) (l (rest l))) => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+5.
+
+(defunc in (a x)
+  :input-contract (listp x)
+  :output-contract (booleanp (in a x))
+  (cond ((endp x)            nil)
+        ((equal a (first x)) t)
+        (t                   (in a (rest x)))))
+
+1. (not (listp x)) => phi
+2. (listp x) /\ (endp x)  => phi
+3. (listp x) /\ (not (endp x)) /\ (equal a (first x)) => phi
+4. (listp x) /\ (not (endp x)) /\ (not (equal a (first x))) /\ phi|((x (rest x))) => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+6.
+
+(defunc exists-symbol (l)
+  :input-contract (listp l)
+  :output-contract (booleanp (exists-symbol l))
+  (and (not (endp l))
+       (or (symbolp (first l))
+           (exists-symbol (rest l)))))
+
+Hint: first rewrite this function equivalently using a single cond.
+
+We rewrite this equivalently into
+
+(defunc exists-symbol (l)
+  :input-contract (listp l)
+  :output-contract (booleanp (exists-symbol l))
+  (cond ((endp l)            nil)
+        ((symbolp (first l)) t)
+        (t                   (exists-symbol (rest l)))))
+
+(not (listp l)) => phi
+(listp l) /\ (endp l) => phi
+(listp l) /\ (not (endp l)) /\ (symbolp (first l)) => phi
+(listp l) /\ (not (endp l)) /\ (not (symbolp (first l))) /\ phi|((l (rest l))) => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+7.
+
+(defunc how-many (e l)
+  :input-contract (listp l)
+  :output-contract (natp (how-many e l))
+  (if (endp l)
+    0
+    (+ (if (equal e (first l)) 1 0)
+       (how-many e (rest l)))))
+
+(Be careful with the second (nested) if. The best way to deal with it is
+to "hoist" it: pull the inner if outside of the surrounding + function,
+which requires duplicating some code.) The result should be code with a
+single cond.
+
+We carefully rewrite this into
+
+(defunc how-many (e l)
+  :input-contract (listp l)
+  :output-contract (natp (how-many e l))
+  (cond ((endp l) 0)
+        ((equal e (first l)) (+ 1 (how-many e (rest l))))
+        (t                   (+ 0 (how-many e (rest l))))))
+
+(not (listp l)) =? phi
+(listp l) /\ (endp l) => phi
+(listp l) /\ (not (endp l)) /\ (equal e (first l)) /\ phi|((l (rest l))) => phi
+(listp l) /\ (not (endp l)) /\ (not (equal e (first l))) /\ phi|((l (rest l))) => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+8.
+
+Check this function for admissibility first. If it is not admissible, what
+does this mean for the induction scheme?
+
+(defunc run-down-a-list (n l)
+  :input-contract (and (integerp n) (listp l))
+  :output-contract t
+  (if (endp l)
+    nil
+    (if (equal n 0)
+      (first l)
+      (run-down-a-list (- n 1) l))))
+
+This function does not terminate (example: ((n -1) (l '(1)))) and is
+therefore not admissible and therefore does not give rise to an IS.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+9.
+
+Consider the standard admissible definition
+
+(defunc len (l)
+  :input-contract (listp l)
+  :output-contract (natp (len l))
+  (if (endp l)
+    0
+    (+ 1 (len (rest l)))))
+
+(a) Given some formula phi, write down the induction scheme len gives rise to:
+
+(not (listp x)) => phi
+(listp x) /\ (endp x) => phi
+(listp x) /\ (not (endp x)) /\ phi|((x (rest x))) => phi
+
+(b) Someone who did not pay attention in class claims that the induction
+scheme derived from the len function above can be simplified: in order to
+prove any claim phi, instead prove
+
+(i)  (listp x) /\ (endp x) => phi
+(ii) (listp x) /\ (not (endp x)) /\ phi|((x (rest x))) => phi
+
+Show that this is a mistake: give an _invalid_ claim phi that can
+nevertheless be "proved" using the above wrong induction scheme: give a
+counterexample for phi, and prove by propositional reasoning that
+nevertheless both (i) and (ii) hold for your choice of phi.
+
+phi : (natp x) => x = 1
+
+substitution sigma such that phi|sigma is equivalent to nil : ((x 0))
+
+(i) is equivalent to T:
+
+  (listp x) /\ (endp x) => ((natp x) => x = 1)
+=
+  (listp x) /\ (endp x) /\ (natp x) => x = 1
+=
+  nil => x = 1
+=
+  T
+
+(ii) is equivalent to T:
+
+similar to the above
+
+(c) Based on your convincing counterexample, the person says he really
+meant: in order to prove any claim phi, instead prove
+
+(i)  (not (listp x)) => phi
+(ii) (listp x) /\ (not (endp x)) /\ phi|((x (rest x))) => phi
+
+Show that this is not much better: again give an _invalid_ claim phi and a
+counterexample for phi, and prove by propositional reasoning that
+nevertheless both (i) and (ii) hold for your choice of phi.
+
+phi : (listp x) => x = 1
+
+substitution sigma such that phi|sigma is equivalent to nil : ((x nil))
+
+(i) is equivalent to T:
+
+  (not (listp x)) => ((listp x) => x = 1)
+
+  is trivially T. More interesting is the case (ii):
+
+(ii) is equivalent to T: prove this carefully, including identifying
+     context, derived context, etc.
+
+(listp x) /\ (not (endp x)) /\ ((listp (rest x)) => (rest x) = 1) => ((listp x) => x = 1)
+
+  C1. (listp x)
+  C2. (not (endp x))
+  C3. (listp (rest x)) => (rest x) = 1
+  C4. (listp (rest x)) { C1,C2 }
+  C5. (rest x) = 1     { C3,C4,MP }
+  C6. nil              { C4,C5, def. of listp }
+
+|#
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Induction Schemes of Non-Recursive Functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+*Every* admissible ACL2 function gives rise to a valid induction scheme --
+even non-recursive ones! Using a few example, let's see what such induction
+schemes look like. As above, determine the induction scheme for each of the
+following functions (for some arbitrary [and irrelevant] conjecture phi).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+10.
+
+(defunc implies (p q)
+  :input-contract (and (booleanp p) (booleanp q))
+  :output-contract (booleanp (implies p q))
+  (if q
+    t
+    (not p)))
+
+~((booleanp p) /\ (booleanp q)) => phi
+  (booleanp p) /\ (booleanp q) /\  q => phi
+  (booleanp p) /\ (booleanp q) /\ ~q => phi
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+11.
+
+(defunc fmad (a b c)
+  :input-contract (and (rationalp a) (rationalp b) (rationalp c))
+  :output-contract (rationalp (fmad a b c))
+  (+ (* a b) c))
+
+(not ((rationalp a) /\ (rationalp b) /\ (rationalp c))) => phi
+(rationalp a) /\ (rationalp b) /\ (rationalp c) => phi
+
+We can see that, for a non-recursive function, the "induction scheme" is
+nothing more than case analysis.
+
+|#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Sorting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#|
+
+12.
+
+In this problem you will learn about the relationship between termination
+and computational complexity of functions, known in the form of "big-Oh"
+notation. You will implement a simple sorting algorithm known as Bubble
+sort. The algorithm takes a rationallist and checks whether the list
+contains an index i such that the elements x and y at positions i and i+1
+satisfy x > y. If so, the algorithm swaps x and y. This check-and-swap
+sequence is repeated until the list is sorted.
+
+Give a partial argument why the algorithm terminates, as follows. Suppose
+the list is not sorted. How do we know that the check-and-swap sequence
+actually modifies the list? (If the list is not sorted and the algorithm
+does not modify it, then the algorithm obviously does not terminate, since
+the sortedness check will always fail.)
+
+If the list is not sorted, then there exists one index i such that the
+entries x and y at positions i and i+1 satisfy x > y and hence x <> y.
+Swapping x and y therefore modifies the list.
+
+|#
+
+; Recall the definition of a list of rationals, which gives rise to a
+; recognizer rationallistp:
+
+(defdata rationallist (listof rational))
+
+; Define a function
+
+; out-of-order : Rationallist -> Nat
+
+; that takes a list l of rationals and returns an index i such that the
+; elements x and y of l at positions i and i+1, respectively, satisfy x > y
+; (which means they need to be swapped when sorting). If l does not contain
+; such elements, return (len l). Note that position counting starts from 0.
+; See examples.
+
+; Hint: remember the first and second functions, and be aware of these
+; functions' input contracts.
+
+(defunc out-of-order (l)
+  :input-contract (rationallistp l)
+  :output-contract (natp (out-of-order l))
+  (let ((len (len l)))
+    (cond ((<= len 1)               len)
+          ((> (first l) (second l)) 0)
+          (t                        (+ (out-of-order (rest l)) 1)))))
+
+(check= (out-of-order '(1 2)) 2) ; nothing swappable
+(check= (out-of-order '(2 1)) 0)
+
+; Define a function
+
+; swap : Nat x Rationallist -> Rationallist
+
+; that takes a natural number i and a list of rationals l such that i+1 <
+; (len l). This last condition must be part of your input contract.
+; The function returns l, but with elements at positions i and i+1 swapped.
+
+; Hint: again remember the first and second functions. Think about what
+; argument this function should recur over.
+
+
+(defunc swap (i l)
+  :input-contract (and (rationallistp l) (natp i) (< (+ i 1) (len l)))
+  :output-contract (rationallistp (swap i l))
+  (if (equal i 0)
+    (cons (second l) (cons (first l) (rest (rest l))))
+    (cons (first l) (swap (- i 1) (rest l)))))
+
+(check= (swap 0 '(1 2)) '(2 1))
+
+; Now we can write a sort function that looks for swappable elements using
+; out-of-order, then swaps them using swap, and repeats this until the list
+; is sorted. However, there is a problem: above you have given a partial
+; argument why this process will terminate. ACL2s, however, needs to give a
+; full termination proof, not just a partial argument, to admit the
+; function. This is difficult: if you write the function as suggested
+; above, ACL2 will not prove it terminating. We can help it as follows.
+
+; First write a function
+
+; sort-helper : Rationallist x Nat -> Rationallist
+
+; such that (sort-helper l k) simply returns l unchanged if there are no
+; swappable elements, and otherwise swaps the swappable elements and looks
+; for more swappable elements, but at most k times. This function naturally
+; terminates, as the "swap count" k decreases in every recursive call.
+
+; Design some tests where k is too small to sort the list l completely.
+; Design some tests where k is large enough to sort the list l. For the
+; second category of tests, try to find the minimal k that accomplishes the
+; sorting.
+
+(defunc sort-helper (l k)
+  :input-contract (and (rationallistp l) (natp k))
+  :output-contract (rationallistp (sort-helper l k))
+  (let ((i (out-of-order l)))
+    (if (or (>= (+ i 1) (len l))
+            (equal k 0))
+      l
+      (sort-helper (swap i l) (- k 1)))))
+
+; Now we want to get rid of the parameter k, which is not user-friendly,
+; and define a function
+
+; sort : Rationallist -> Rationallist
+
+; Given a list l, estimate a number -- as a function of (len l) -- that
+; gives a safe upper bound on the number of swaps needed to fully sort the
+; list. Pass that number to sort-helper for the parameter k. Again, this
+; value will depend on (len l).
+
+; Design at least 10 tests. Include all the tests you used for the
+; sort-helper function where the parameter k was insufficient to fully sort
+; the list.
+
+(defunc sort (l)
+  :input-contract (rationallistp l)
+  :output-contract (rationallistp (sort l))
+  (sort-helper l (* (len l) (len l))))
+
+(check= (sort '(2/3 3 -1 4/6 0 -2)) '(-2 -1 0 2/3 2/3 3))
+
+#|
+
+Closing comments:
+
+Function sort is non-recursive and thus of course terminates. We can in
+fact say more: the function will apply at most k swaps to the input list,
+so we have an estimate *how long* it will in fact run, depending on the
+input length (since k depends on (len l)). We say that our sorting
+algorithm, which is known as bubble sort, has quadratic complexity, denoted
+O(|l|^2), where |l| is the length of the input list l.
+
+|#
