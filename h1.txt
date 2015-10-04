@@ -1,0 +1,45 @@
+Student Name: Zeqing Zhang
+               
+                        The Importance of Correct Computer System
+The incident I found interesting was the Patriot Missile Software problem, which could be counted as one of the top 10 bugs since the invention of a computer. I found the resource from the government report. ("GAO Report: Patriot Missile Defense-- Software Problem Led to System Failure at Dhahran, Saudi Arabia." GAO Report: Patriot Missile Defense-- Software Problem Led to System Failure at Dhahran, Saudi Arabia. U.S. Government Accountability Office, 4 Feb. 1992. Web. 12 Sept. 2014.) This incident took place on the night of February 25, 1991 and caused 28 U.S. soldiers to be killed and 98 soldiers to be injured. The incident was due to the existence of one bug in the Patriot’s radar and tracking system. This bug occurs in the calculation of the range gate of the missiles launched. Patriot Missile can track a target by determining its speed and its last location.  The speed and time is a decimal number counted as tenth-seconds. However the number expression in computer was presented as 24-bits binary numbers, which means that you could only use an approximated value in the computer system to express the time. Because of this, a problem arose. If you used the Patriot Missile for a short time, it could be used accurately to destroy the missiles by calculating the approximate range of them and the short time usage also voids the expose of the location of the missile launchers. Yet, as you use the Patriot system longer and the time in the system increase, the less accurate the calculations become. The problem missile was continuously used for over 100 hours, which led to an error of 0.3433 seconds in the time calculation. If we multiply that error by the speed of the missile, that error gets magnified to an inaccuracy of about one-kilometer.   As a consequence of this, it became impossible for the missile to crash the enemy’s missile. Instead, the missile killed our own people. From this incident, we can clearly see how important accuracy of data is. 
+The Patriot bug surprised me a lot. In my mind, the weapon, especially those used in wars, should be tested for a long time to make sure there wouldn’t be any serious bugs. In a war, one small bug can lead to the death of hundreds of people. In addition, this bug is very interesting to me because it was caused by the inabilities of the binary number system to perform basic algorithms accurately. ("The Binary System." The Binary System. Ryan, n.d. Web. 12 Sept. 2014.) Since we can’t change the algorithms directly, what we can only do is to add subroutines to the system. 
+The lesson that I learned from reading about this incident is the importance of correctness in developing software. One minor error in the coding can lead to catastrophic consequences. As in this case, the failure to recognize the bug in the system led to the death of 28 American soldiers and 98 more to be injured. Software is playing a more important role in everyone’s lives and people are become increasingly reliant on them. Thus, if the software is inaccurate, everything we do can get messed up. It can range from simple tax calculations to complicated military weapons. Another lesson that I learned is the significance of constantly updating your existing software. If software isn’t up-to-date, as is the case of the Patriot Missile Software, bugs that are detected couldn’t get fixed. And because of this, problems might occur due to the inaccuracy of the software and the presence of the bug. 
+I do believe that tragedies such as the Patriot Missiles could be prevented today but the existence of bugs could not.This is because most bugs appear because there have been some human errors when coding the system and human errors are inevitable. As technology advances, more and more software of increasing complexity are being developed. As we all know, the more complex something is, the more coding people will have to do, which leaves more places for error. In addition, it is virtually impossible for the programmers to detect all the bugs and fix them. Usually, we only find them when they start becoming a problem for others. This makes the existence of bugs to be unavoidable. However, we can prevent tragedies such as the Patriot Missiles by performing multiple tests before actually using the weapon in wars. By doing so, this increases the likelihood of detecting serious bugs and fixing them and will often lead to improved versions of the software that will easier to use. 
+
+
+
+
+
+
+                                                            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                   
+
+
+
+
+
+
+
+
+
+
+                                      Works Cited
+
+"GAO Report: Patriot Missile Defense-- Software Problem Led to System Failure at Dhahran, Saudi Arabia." GAO Report: Patriot Missile Defense-- Software Problem Led to System Failure at Dhahran, Saudi Arabia. U.S. Government Accountability Office, 4 Feb. 1992. Web. 12 Sept. 2014.
+
+
+"The Binary System." The Binary System. Ryan, n.d. Web. 12 Sept. 2014.
